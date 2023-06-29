@@ -80,14 +80,14 @@ def create_warp_model(model,sigma,knot,batch):
 
     for i, layer in enumerate(backbone.layers):
         if i == 0: 
-            inpt = layer.input  # backboneモデルの下端のテンソル(Input)
+            inpt = layer.input  
             x = layer.input
             out_name = layer.output.name
-            mapping[layer.output.name] = x  # モデルの上方でこのレイヤと繋がっている場合はこのテンソルを持ってきて入力する
+            mapping[layer.output.name] = x  
             continue
 
-        # 元モデルのレイヤーに入力されるテンソルに対応した、改変後モデルにおけるテンソルを持ってくる
-        if type(layer.input) is list: # layer.inputは複数入力のときだけlistになっている
+
+        if type(layer.input) is list: 
             input_tensors = list(map(lambda t: mapping[t.name], layer.input))
         else:
             input_tensors = mapping[layer.input.name]
@@ -95,17 +95,12 @@ def create_warp_model(model,sigma,knot,batch):
 
 
         out_name = layer.output.name
-        # ここで差し替え
+
         if isinstance(layer, tf.keras.layers.Flatten):
             warp_layer = Warp_Layer(sigma,knot)
-            # convert input_tensor to numpy
-            # tensor_np = input_tensors.eval(session=tf.compat.v1.Session())
             x = warp_layer(input_tensors)
-            # convert numpy to tensor
-            # x = tf.convert_to_tensor(x,dtype=tf.float64)
             x = layer(x)
         else:
-            # 差し替えの必要がないレイヤーは再利用
             x = layer(input_tensors)
         mapping[out_name] = x
     return tf.keras.Model(inpt, x)
